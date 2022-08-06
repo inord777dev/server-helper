@@ -12,7 +12,7 @@ import { MyLogger } from 'src/logger/logger.service';
 export class AllExceptionsFilter implements ExceptionFilter {
   constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
 
-  private readonly logger = new MyLogger('Fail');
+  private readonly logger = new MyLogger();
 
   catch(exception: unknown, host: ArgumentsHost): void {
     // In certain situations `httpAdapter` might not be available in the
@@ -26,17 +26,20 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
+    const req = ctx.getRequest();
+
     const responseBody = {
       statusCode: httpStatus,
       timestamp: new Date().toISOString(),
-      path: httpAdapter.getRequestUrl(ctx.getRequest()),
+      path: httpAdapter.getRequestUrl(req),
       message:
         exception instanceof HttpException
           ? exception.message
           : 'Internal Server Error',
     };
 
-    this.logger.error(JSON.stringify(responseBody));
+    this.logger.requestShow(req);
+    this.logger.errorShow(responseBody);
 
     httpAdapter.reply(ctx.getResponse(), responseBody, httpStatus);
   }
